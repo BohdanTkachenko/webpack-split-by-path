@@ -7,6 +7,10 @@ function SplitByPathPlugin (buckets) {
     }
 
     bucket.path = bucket.path.map(function (path) {
+      // Check for trailing \ in path and remove if found
+      if (path[path.length - 1] === '\\') {
+        path = path.substring(0, path.length - 1);
+      }
       return new RegExp('^' + path);
     });
 
