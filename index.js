@@ -1,13 +1,17 @@
 // Based on Split by Name Webpack Plugin – https://github.com/soundcloud/split-by-name-webpack-plugin
 
-function SplitByPathPlugin (buckets) {
+function regExpQuote(str) {
+  return (str + '').replace(/[.?*+^$[\]\\(){}|-]/g, '\\$&');
+}
+
+function SplitByPathPlugin(buckets) {
   this.buckets = buckets.slice(0).map(function (bucket) {
     if (!Array.isArray(bucket.path)) {
       bucket.path = [ bucket.path ];
     }
 
     bucket.path = bucket.path.map(function (path) {
-      return new RegExp('^' + path);
+      return new RegExp('^' + regExpQuote(path));
     });
 
     return bucket;
