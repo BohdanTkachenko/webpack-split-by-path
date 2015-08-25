@@ -24,9 +24,19 @@ SplitByPathPlugin.prototype.apply = function(compiler) {
   function findMatchingBucket(chunk) {
     var match = null;
 
+    if (!chunk.userRequest) {
+      return match;
+    }
+
+    var userRequest = chunk.userRequest;
+    var lastIndex = userRequest.lastIndexOf("!");
+    if (lastIndex !== -1) {
+      userRequest = userRequest.substring(lastIndex + 1);
+    }
+
     buckets.some(function (bucket) {
       return bucket.path.some(function (path) {
-        if (path.test(chunk.userRequest)) {
+        if (path.test(userRequest)) {
           match = bucket;
           return true;
         }
