@@ -22,5 +22,10 @@
   "bugs": {
     "url": "https://github.com/BohdanTkachenko/webpack-split-by-path/issues"
   },
-  "homepage": "https://github.com/BohdanTkachenko/webpack-split-by-path"
+  "homepage": "https://github.com/BohdanTkachenko/webpack-split-by-path",
+  "devDependencies": {
+    "css-loader": "^0.17.0",
+    "react": "^0.13.3",
+    "style-loader": "^0.12.3"
+  }
 }
