@@ -10,17 +10,17 @@ function SplitByPathPlugin(buckets, config) {
 
   if (!Array.isArray(config.ignore)) {
     config.ignore = [ config.ignore ];
-    config.ignore = config.ignore.map(function (item) {
-      if (item instanceof RegExp) {
-        return item;
-      }
-
-      return new RegExp('^' + regExpQuote(item));
-    });
   }
 
-  this.ignore = config.ignore;
+  config.ignore = config.ignore.map(function (item) {
+    if (item instanceof RegExp) {
+      return item;
+    }
 
+    return new RegExp('^' + regExpQuote(item));
+  });
+
+  this.ignore = config.ignore;
   this.buckets = buckets.slice(0).map(function (bucket) {
     if (!Array.isArray(bucket.path)) {
       bucket.path = [ bucket.path ];
