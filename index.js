@@ -11,6 +11,10 @@ function SplitByPathPlugin(buckets, config) {
   if (!Array.isArray(config.ignore)) {
     config.ignore = [ config.ignore ];
     config.ignore = config.ignore.map(function (item) {
+      if (item instanceof RegExp) {
+        return item;
+      }
+
       return new RegExp('^' + regExpQuote(item));
     });
   }
@@ -23,6 +27,10 @@ function SplitByPathPlugin(buckets, config) {
     }
 
     bucket.path = bucket.path.map(function (path) {
+      if (path instanceof RegExp) {
+        return path;
+      }
+
       return new RegExp('^' + regExpQuote(path));
     });
 
