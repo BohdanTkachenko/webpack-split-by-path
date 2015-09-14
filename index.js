@@ -1,10 +1,22 @@
 // Based on Split by Name Webpack Plugin – https://github.com/soundcloud/split-by-name-webpack-plugin
 
 function regExpQuote(str) {
-  return (str + '').replace(/[.?*+^$[\]\\(){}|-]/g, '\\$&');
+  return (str + '').replace(/^[:!,]|[\\^$.*+?()[\]{}|\/]|(^[0-9a-fA-Fnrtuvx])|([\n\r\u2028\u2029])/g, '\\$&');
 }
 
-function SplitByPathPlugin(buckets) {
+function SplitByPathPlugin(buckets, config) {
+  config = config || {};
+  config.ignore = config.ignore || [];
+
+  if (!Array.isArray(config.ignore)) {
+    config.ignore = [ config.ignore ];
+    config.ignore = config.ignore.map(function (item) {
+      return new RegExp('^' + regExpQuote(item));
+    });
+  }
+
+  this.ignore = config.ignore;
+
   this.buckets = buckets.slice(0).map(function (bucket) {
     if (!Array.isArray(bucket.path)) {
       bucket.path = [ bucket.path ];
@@ -20,6 +32,7 @@ function SplitByPathPlugin(buckets) {
 
 SplitByPathPlugin.prototype.apply = function(compiler) {
   var buckets = this.buckets;
+  var ignore = this.ignore;
 
   function findMatchingBucket(chunk) {
     var match = null;
@@ -29,9 +42,15 @@ SplitByPathPlugin.prototype.apply = function(compiler) {
     }
 
     var userRequest = chunk.userRequest;
-    var lastIndex = userRequest.lastIndexOf("!");
+    var lastIndex = userRequest.lastIndexOf('!');
     if (lastIndex !== -1) {
       userRequest = userRequest.substring(lastIndex + 1);
+    }
+
+    for (var i in ignore) {
+      if (ignore[i].test(userRequest)) {
+        return match;
+      }
     }
 
     buckets.some(function (bucket) {
