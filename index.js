@@ -118,7 +118,8 @@ SplitByPathPlugin.prototype.apply = function(compiler) {
                 bucket.chunks = allChunks.slice(1);
               }
 
-              bucket.initial = bucket.entry = !index;
+              bucket.initial = true;
+              bucket.entry = !index;
             });
         });
     });
