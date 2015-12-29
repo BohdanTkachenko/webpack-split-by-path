@@ -87,7 +87,7 @@ SplitByPathPlugin.prototype.apply = function(compiler) {
       chunks
         // only parse the entry chunk
         .filter(function (chunk) {
-          return chunk.entry;
+          return chunk.entry && chunk.name;
         })
         .forEach(function (chunk) {
           chunk.modules.slice().forEach(function (mod) {
