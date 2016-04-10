@@ -1,7 +1,7 @@
 // Based on Split by Name Webpack Plugin – https://github.com/soundcloud/split-by-name-webpack-plugin
 
 function regExpQuote(str) {
-  return (str + '').replace(/^[:!,]|[\\^$.*+?()[\]{}|\/]|(^[0-9a-fA-Fnrtuvx])|([\n\r\u2028\u2029])/g, '\\$&');
+  return (str + '').replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&');
 }
 
 function SplitByPathPlugin(buckets, config) {
