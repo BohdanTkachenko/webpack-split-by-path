@@ -7,6 +7,7 @@ function regExpQuote(str) {
 function SplitByPathPlugin(buckets, config) {
   config = config || {};
   config.ignore = config.ignore || [];
+  config.ignoreChunks = config.ignoreChunks || [];
 
   if (!Array.isArray(config.ignore)) {
     config.ignore = [ config.ignore ];
@@ -20,7 +21,12 @@ function SplitByPathPlugin(buckets, config) {
     return new RegExp('^' + regExpQuote(item));
   });
 
+  if (!Array.isArray(config.ignoreChunks)) {
+    config.ignoreChunks = [ config.ignoreChunks ];
+  }
+
   this.ignore = config.ignore;
+  this.ignoreChunks = config.ignoreChunks;
   this.buckets = buckets.slice(0).map(function (bucket) {
     if (!Array.isArray(bucket.path)) {
       bucket.path = [ bucket.path ];
@@ -41,6 +47,7 @@ function SplitByPathPlugin(buckets, config) {
 SplitByPathPlugin.prototype.apply = function(compiler) {
   var buckets = this.buckets;
   var ignore = this.ignore;
+  var ignoreChunks = this.ignoreChunks;
 
   function findMatchingBucket(chunk) {
     var match = null;
@@ -87,7 +94,7 @@ SplitByPathPlugin.prototype.apply = function(compiler) {
       chunks
         // only parse the entry chunk
         .filter(function (chunk) {
-          return chunk.entry && chunk.name;
+          return chunk.entry && chunk.name && ignoreChunks.indexOf(chunk.name) === -1;
         })
         .forEach(function (chunk) {
           chunk.modules.slice().forEach(function (mod) {
