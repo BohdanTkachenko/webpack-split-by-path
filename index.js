@@ -49,37 +49,6 @@ SplitByPathPlugin.prototype.apply = function(compiler) {
   var ignore = this.ignore;
   var ignoreChunks = this.ignoreChunks;
 
-  function findMatchingBucket(chunk) {
-    var match = null;
-
-    if (!chunk.userRequest) {
-      return match;
-    }
-
-    var userRequest = chunk.userRequest;
-    var lastIndex = userRequest.lastIndexOf('!');
-    if (lastIndex !== -1) {
-      userRequest = userRequest.substring(lastIndex + 1);
-    }
-
-    for (var i in ignore) {
-      if (ignore[i].test(userRequest)) {
-        return match;
-      }
-    }
-
-    buckets.some(function (bucket) {
-      return bucket.path.some(function (path) {
-        if (path.test(userRequest)) {
-          match = bucket;
-          return true;
-        }
-      });
-    });
-
-    return match;
-  }
-
   compiler.plugin('compilation', function (compilation) {
     var extraChunks = {};
 
@@ -98,13 +67,16 @@ SplitByPathPlugin.prototype.apply = function(compiler) {
         })
         .forEach(function (chunk) {
           chunk.modules.slice().forEach(function (mod) {
-            var bucket = findMatchingBucket(mod),
-                newChunk;
+            var bucket = findMatchingBucket(mod, ignore, buckets)
+            var newChunk;
+
             if (!bucket) {
               // it stays in the original bucket
               return;
             }
-            if (!(newChunk = bucketToChunk(bucket))) {
+
+            newChunk = bucketToChunk(bucket)
+            if (!newChunk) {
               newChunk = extraChunks[bucket.name] = addChunk(bucket.name);
             }
             // add the module to the new chunk
@@ -134,3 +106,34 @@ SplitByPathPlugin.prototype.apply = function(compiler) {
 };
 
 module.exports = SplitByPathPlugin;
+
+function findMatchingBucket(mod, ignore, bucketsContext) {
+  var match = null;
+
+  if (!mod.userRequest) {
+    return match;
+  }
+
+  var userRequest = mod.userRequest;
+  var lastIndex = userRequest.lastIndexOf('!');
+  if (lastIndex !== -1) {
+    userRequest = userRequest.substring(lastIndex + 1);
+  }
+
+  for (var i in ignore) {
+    if (ignore[i].test(userRequest)) {
+      return match;
+    }
+  }
+
+  bucketsContext.some(function (bucket) {
+    return bucket.path.some(function (path) {
+      if (path.test(userRequest)) {
+        match = bucket;
+        return true;
+      }
+    });
+  });
+
+  return match;
+}
