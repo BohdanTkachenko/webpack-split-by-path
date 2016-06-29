@@ -10,7 +10,7 @@ function SplitByPathPlugin(buckets, config) {
   config.ignoreChunks = config.ignoreChunks || [];
 
   if (!Array.isArray(config.ignore)) {
-    config.ignore = [ config.ignore ];
+    config.ignore = [config.ignore];
   }
 
   config.ignore = config.ignore.map(function (item) {
@@ -22,14 +22,16 @@ function SplitByPathPlugin(buckets, config) {
   });
 
   if (!Array.isArray(config.ignoreChunks)) {
-    config.ignoreChunks = [ config.ignoreChunks ];
+    config.ignoreChunks = [config.ignoreChunks];
   }
 
   this.ignore = config.ignore;
   this.ignoreChunks = config.ignoreChunks;
+
+  // buckets mean each bucket holds a pile of module, which is the same concept as chunk
   this.buckets = buckets.slice(0).map(function (bucket) {
     if (!Array.isArray(bucket.path)) {
-      bucket.path = [ bucket.path ];
+      bucket.path = [bucket.path];
     }
 
     bucket.path = bucket.path.map(function (path) {
@@ -44,7 +46,7 @@ function SplitByPathPlugin(buckets, config) {
   });
 }
 
-SplitByPathPlugin.prototype.apply = function(compiler) {
+SplitByPathPlugin.prototype.apply = function (compiler) {
   var buckets = this.buckets;
   var ignore = this.ignore;
   var ignoreChunks = this.ignoreChunks;
@@ -61,30 +63,33 @@ SplitByPathPlugin.prototype.apply = function(compiler) {
     compilation.plugin('optimize-chunks', function (chunks) {
       var addChunk = this.addChunk.bind(this);
       chunks
-        // only parse the entry chunk
+      // only parse the entry chunk
         .filter(function (chunk) {
           return chunk.entry && chunk.name && ignoreChunks.indexOf(chunk.name) === -1;
         })
         .forEach(function (chunk) {
-          chunk.modules.slice().forEach(function (mod) {
-            var bucket = findMatchingBucket(mod, ignore, buckets)
-            var newChunk;
+          chunk.modules
+            .slice()
+            .forEach(function (mod) {
+              var bucket = findMatchingBucket(mod, ignore, buckets);
+              var newChunk;
 
-            if (!bucket) {
-              // it stays in the original bucket
-              return;
-            }
+              if (!bucket) {
+                // it stays in the original bucket
+                return;
+              }
 
-            newChunk = bucketToChunk(bucket)
-            if (!newChunk) {
-              newChunk = extraChunks[bucket.name] = addChunk(bucket.name);
-            }
-            // add the module to the new chunk
-            newChunk.addModule(mod);
-            mod.addChunk(newChunk);
-            // remove it from the existing chunk
-            mod.removeChunk(chunk);
-          });
+              newChunk = bucketToChunk(bucket)
+              if (!newChunk) {
+                newChunk = extraChunks[bucket.name] = addChunk(bucket.name);
+              }
+
+              // add the module to the new chunk
+              newChunk.addModule(mod);
+              mod.addChunk(newChunk);
+              // remove it from the existing chunk
+              mod.removeChunk(chunk);
+            });
 
           buckets
             .map(bucketToChunk)
