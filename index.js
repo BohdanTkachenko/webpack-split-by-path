@@ -115,25 +115,20 @@ module.exports = SplitByPathPlugin;
 function findMatchingBucket(mod, ignore, bucketsContext) {
   var match = null;
 
-  if (!mod.userRequest) {
+  if (!mod.resource) {
     return match;
   }
 
-  var userRequest = mod.userRequest;
-  var lastIndex = userRequest.lastIndexOf('!');
-  if (lastIndex !== -1) {
-    userRequest = userRequest.substring(lastIndex + 1);
-  }
-
+  var resourcePath = mod.resource;
   for (var i in ignore) {
-    if (ignore[i].test(userRequest)) {
+    if (ignore[i].test(resourcePath)) {
       return match;
     }
   }
 
   bucketsContext.some(function (bucket) {
     return bucket.path.some(function (path) {
-      if (path.test(userRequest)) {
+      if (path.test(resourcePath)) {
         match = bucket;
         return true;
       }
