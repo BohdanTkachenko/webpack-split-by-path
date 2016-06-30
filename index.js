@@ -4,6 +4,25 @@ function regExpQuote(str) {
   return (str + '').replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&');
 }
 
+/**
+ * @name Bucket
+ * @property {String} name
+ * @property {Array<String|RegExp>} path
+ */
+
+/**
+ *
+ * @param {Bucket[]} buckets - instances of Bucket
+ * @param {Object} config - configurable options include:
+ * <pre>
+ * {
+ *    ignore: string[],
+ *    ignoreChunks: string[]
+ *    manifest: string
+ * }
+ * </pre>
+ * @constructor
+ */
 function SplitByPathPlugin(buckets, config) {
   config = config || {};
   config.ignore = config.ignore || [];
@@ -13,7 +32,11 @@ function SplitByPathPlugin(buckets, config) {
     config.ignore = [config.ignore];
   }
 
-  config.ignore = config.ignore.map(function (item) {
+  if (!Array.isArray(config.ignoreChunks)) {
+    config.ignoreChunks = [config.ignoreChunks];
+  }
+
+  this.ignore = config.ignore.map(function (item) {
     if (item instanceof RegExp) {
       return item;
     }
@@ -21,13 +44,8 @@ function SplitByPathPlugin(buckets, config) {
     return new RegExp('^' + regExpQuote(item));
   });
 
-  if (!Array.isArray(config.ignoreChunks)) {
-    config.ignoreChunks = [config.ignoreChunks];
-  }
-
-  this.manifest = config.manifest || 'manifest';
-  this.ignore = config.ignore;
   this.ignoreChunks = config.ignoreChunks;
+  this.manifest = config.manifest || 'manifest';
 
   // buckets mean each bucket holds a pile of module, which is the same concept as chunk
   this.buckets = buckets.slice(0).map(function (bucket) {
@@ -125,6 +143,15 @@ SplitByPathPlugin.prototype.apply = function (compiler) {
 
 module.exports = SplitByPathPlugin;
 
+/**
+ * test the target module whether it matches one of the user specified
+ * bucket paths
+ *
+ * @param {Module} mod
+ * @param {String[]} ignore
+ * @param {Bucket[]} bucketsContext
+ * @returns {Bucket}
+ */
 function findMatchingBucket(mod, ignore, bucketsContext) {
   var match = null;
 
