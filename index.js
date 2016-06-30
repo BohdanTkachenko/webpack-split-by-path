@@ -25,6 +25,7 @@ function SplitByPathPlugin(buckets, config) {
     config.ignoreChunks = [config.ignoreChunks];
   }
 
+  this.manifest = config.manifest || 'manifest';
   this.ignore = config.ignore;
   this.ignoreChunks = config.ignoreChunks;
 
@@ -50,6 +51,7 @@ SplitByPathPlugin.prototype.apply = function (compiler) {
   var buckets = this.buckets;
   var ignore = this.ignore;
   var ignoreChunks = this.ignoreChunks;
+  var manifestName = this.manifest;
 
   compiler.plugin('compilation', function (compilation) {
     var extraChunks = {};
@@ -62,12 +64,14 @@ SplitByPathPlugin.prototype.apply = function (compiler) {
 
     compilation.plugin('optimize-chunks', function (chunks) {
       var addChunk = this.addChunk.bind(this);
-      chunks
-      // only parse the entry chunk
+
+      // retrieve the entry chunks, so we can reform them
+      var entryChunks = chunks
         .filter(function (chunk) {
+          // only parse the entry chunk
           return chunk.entry && chunk.name && ignoreChunks.indexOf(chunk.name) === -1;
         })
-        .forEach(function (chunk) {
+        .map(function (chunk) {
           chunk.modules
             .slice()
             .forEach(function (mod) {
@@ -75,7 +79,7 @@ SplitByPathPlugin.prototype.apply = function (compiler) {
               var newChunk;
 
               if (!bucket) {
-                // it stays in the original bucket
+                // the module stays in the original chunk
                 return;
               }
 
@@ -91,21 +95,30 @@ SplitByPathPlugin.prototype.apply = function (compiler) {
               mod.removeChunk(chunk);
             });
 
-          buckets
-            .map(bucketToChunk)
-            .filter(Boolean)
-            .concat(chunk)
-            .forEach(function (bucket, index, allChunks) { // allChunks = [bucket0, bucket1, .. bucketN, orig]
-              if (index) { // not the first one, they get the first chunk as a parent
-                bucket.parents = [allChunks[0]];
-              } else { // the first chunk, it gets the others as 'sub' chunks
-                bucket.chunks = allChunks.slice(1);
-              }
-
-              bucket.initial = true;
-              bucket.entry = !index;
-            });
+          return chunk
         });
+
+      var notEmptyBucketChunks = buckets.map(bucketToChunk).filter(Boolean);
+
+      // create the manifest chunk which displays as the only entry chunk.
+      // it's a little buggy when works with multiple entry specified at entry option
+      // because you have to load the script similar in `the example/app.html`
+      // Therefore, in the manifest output file, there is some additional information
+      // (the manifest list) for the target page.
+
+      var manifestChunk = addChunk(manifestName);
+      manifestChunk.initial = manifestChunk.entry = true;
+      manifestChunk.chunks = notEmptyBucketChunks.concat(entryChunks);
+
+      manifestChunk.chunks.forEach(function (chunk) {
+        chunk.parents = [manifestChunk];
+
+        // split chunks are all initial chunk
+        chunk.initial = true;
+
+        // set the child chunk as not entry chunk, this is important
+        chunk.entry = false;
+      });
     });
   });
 };
