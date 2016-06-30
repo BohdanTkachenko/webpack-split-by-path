@@ -23,18 +23,23 @@ Configuration of the plugin is simple. You instantiate the plugin with an array 
 Creating a 'catch-all' bucket is not necessary: anything which doesn't match one of the defined buckets will be left in
 the original chunk.
 
+Now, by separating the **manifest** info into a standalone chunk, vendor chunks(something like that) will stay the same with or without hashing unless you change their version.
+
 ### API
 new SplitByPathPlugin(chunks, options);
 
-- chunks - array of objects { name: string, path: string or array of strings }
-- options - object, optional { ignore: string or array of strings }
+- chunks - array of objects { name: string, path: string | string[] }
+- options - object, optional {
+    ignore: string | string[],
+    ignoreChunks: string | string[],
+    manifest: string
+  }
 
 ```js
 new SplitByPathPlugin([
-  { name: 'c1': path: 'src/c1' },
-  { name: 'vendor': path: path.join(__dirname, 'node_modules/')},
-  ...,
-  chunkN
+  { name: 'c1', path: 'src/c1' },
+  { name: 'vendor', path: path.join(__dirname, 'node_modules/')},
+  ...chunkN
 ], {
   ignore: [
     'path/to/ingore/file/or/dir1',
@@ -63,7 +68,9 @@ module.exports = {
         name: 'vendor',
         path: path.join(__dirname, 'node_modules')
       }
-    ])
+    ], {
+      manifest: 'app-entry'
+    })
   ]
 };
 ```
