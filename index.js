@@ -81,6 +81,8 @@ SplitByPathPlugin.prototype.apply = function (compiler) {
     }
 
     compilation.plugin('optimize-chunks', function (chunks) {
+      if(this.name) return
+
       var addChunk = this.addChunk.bind(this);
 
       // retrieve the entry chunks, so we can reform them
