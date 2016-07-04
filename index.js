@@ -71,7 +71,7 @@ SplitByPathPlugin.prototype.apply = function (compiler) {
   var ignoreChunks = this.ignoreChunks;
   var manifestName = this.manifest;
 
-  compiler.plugin('compilation', function (compilation) {
+  compiler.plugin('this-compilation', function (compilation) {
     var extraChunks = {};
 
     // Find the chunk which was already created by this bucket.
@@ -81,7 +81,6 @@ SplitByPathPlugin.prototype.apply = function (compiler) {
     }
 
     compilation.plugin('optimize-chunks', function (chunks) {
-      if(this.name) return
 
       var addChunk = this.addChunk.bind(this);
 
