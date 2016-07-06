@@ -4,16 +4,39 @@ function regExpQuote(str) {
   return (str + '').replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&');
 }
 
+/**
+ * @name Bucket
+ * @property {String} name
+ * @property {Array<String|RegExp>} path
+ */
+
+/**
+ *
+ * @param {Bucket[]} buckets - instances of Bucket
+ * @param {Object} config - configurable options include:
+ * <pre>
+ * {
+ *    ignore: string[],
+ *    ignoreChunks: string[]
+ *    manifest: string
+ * }
+ * </pre>
+ * @constructor
+ */
 function SplitByPathPlugin(buckets, config) {
   config = config || {};
   config.ignore = config.ignore || [];
   config.ignoreChunks = config.ignoreChunks || [];
 
   if (!Array.isArray(config.ignore)) {
-    config.ignore = [ config.ignore ];
+    config.ignore = [config.ignore];
   }
 
-  config.ignore = config.ignore.map(function (item) {
+  if (!Array.isArray(config.ignoreChunks)) {
+    config.ignoreChunks = [config.ignoreChunks];
+  }
+
+  this.ignore = config.ignore.map(function (item) {
     if (item instanceof RegExp) {
       return item;
     }
@@ -21,15 +44,13 @@ function SplitByPathPlugin(buckets, config) {
     return new RegExp('^' + regExpQuote(item));
   });
 
-  if (!Array.isArray(config.ignoreChunks)) {
-    config.ignoreChunks = [ config.ignoreChunks ];
-  }
-
-  this.ignore = config.ignore;
   this.ignoreChunks = config.ignoreChunks;
+  this.manifest = config.manifest || 'manifest';
+
+  // buckets mean each bucket holds a pile of module, which is the same concept as chunk
   this.buckets = buckets.slice(0).map(function (bucket) {
     if (!Array.isArray(bucket.path)) {
-      bucket.path = [ bucket.path ];
+      bucket.path = [bucket.path];
     }
 
     bucket.path = bucket.path.map(function (path) {
@@ -44,43 +65,13 @@ function SplitByPathPlugin(buckets, config) {
   });
 }
 
-SplitByPathPlugin.prototype.apply = function(compiler) {
+SplitByPathPlugin.prototype.apply = function (compiler) {
   var buckets = this.buckets;
   var ignore = this.ignore;
   var ignoreChunks = this.ignoreChunks;
+  var manifestName = this.manifest;
 
-  function findMatchingBucket(chunk) {
-    var match = null;
-
-    if (!chunk.userRequest) {
-      return match;
-    }
-
-    var userRequest = chunk.userRequest;
-    var lastIndex = userRequest.lastIndexOf('!');
-    if (lastIndex !== -1) {
-      userRequest = userRequest.substring(lastIndex + 1);
-    }
-
-    for (var i in ignore) {
-      if (ignore[i].test(userRequest)) {
-        return match;
-      }
-    }
-
-    buckets.some(function (bucket) {
-      return bucket.path.some(function (path) {
-        if (path.test(userRequest)) {
-          match = bucket;
-          return true;
-        }
-      });
-    });
-
-    return match;
-  }
-
-  compiler.plugin('compilation', function (compilation) {
+  compiler.plugin('this-compilation', function (compilation) {
     var extraChunks = {};
 
     // Find the chunk which was already created by this bucket.
@@ -90,47 +81,100 @@ SplitByPathPlugin.prototype.apply = function(compiler) {
     }
 
     compilation.plugin('optimize-chunks', function (chunks) {
+
       var addChunk = this.addChunk.bind(this);
-      chunks
-        // only parse the entry chunk
+
+      // retrieve the entry chunks, so we can reform them
+      var entryChunks = chunks
         .filter(function (chunk) {
+          // only parse the entry chunk
           return chunk.entry && chunk.name && ignoreChunks.indexOf(chunk.name) === -1;
         })
-        .forEach(function (chunk) {
-          chunk.modules.slice().forEach(function (mod) {
-            var bucket = findMatchingBucket(mod),
-                newChunk;
-            if (!bucket) {
-              // it stays in the original bucket
-              return;
-            }
-            if (!(newChunk = bucketToChunk(bucket))) {
-              newChunk = extraChunks[bucket.name] = addChunk(bucket.name);
-            }
-            // add the module to the new chunk
-            newChunk.addModule(mod);
-            mod.addChunk(newChunk);
-            // remove it from the existing chunk
-            mod.removeChunk(chunk);
-          });
+        .map(function (chunk) {
+          chunk.modules
+            .slice()
+            .forEach(function (mod) {
+              var bucket = findMatchingBucket(mod, ignore, buckets);
+              var newChunk;
 
-          buckets
-            .map(bucketToChunk)
-            .filter(Boolean)
-            .concat(chunk)
-            .forEach(function (bucket, index, allChunks) { // allChunks = [bucket0, bucket1, .. bucketN, orig]
-              if (index) { // not the first one, they get the first chunk as a parent
-                bucket.parents = [allChunks[0]];
-              } else { // the first chunk, it gets the others as 'sub' chunks
-                bucket.chunks = allChunks.slice(1);
+              if (!bucket) {
+                // the module stays in the original chunk
+                return;
               }
 
-              bucket.initial = true;
-              bucket.entry = !index;
+              newChunk = bucketToChunk(bucket)
+              if (!newChunk) {
+                newChunk = extraChunks[bucket.name] = addChunk(bucket.name);
+              }
+
+              // add the module to the new chunk
+              newChunk.addModule(mod);
+              mod.addChunk(newChunk);
+              // remove it from the existing chunk
+              mod.removeChunk(chunk);
             });
+
+          return chunk
         });
+
+      var notEmptyBucketChunks = buckets.map(bucketToChunk).filter(Boolean);
+
+      // create the manifest chunk which displays as the only entry chunk.
+      // it's a little buggy when works with multiple entry specified at entry option
+      // because you have to load the script similar in `the example/app.html`
+      // Therefore, in the manifest output file, there is some additional information
+      // (the manifest list) for the target page.
+
+      var manifestChunk = addChunk(manifestName);
+      manifestChunk.initial = manifestChunk.entry = true;
+      manifestChunk.chunks = notEmptyBucketChunks.concat(entryChunks);
+
+      manifestChunk.chunks.forEach(function (chunk) {
+        chunk.parents = [manifestChunk];
+
+        // split chunks are all initial chunk
+        chunk.initial = true;
+
+        // set the child chunk as not entry chunk, this is important
+        chunk.entry = false;
+      });
     });
   });
 };
 
 module.exports = SplitByPathPlugin;
+
+/**
+ * test the target module whether it matches one of the user specified
+ * bucket paths
+ *
+ * @param {Module} mod
+ * @param {String[]} ignore
+ * @param {Bucket[]} bucketsContext
+ * @returns {Bucket}
+ */
+function findMatchingBucket(mod, ignore, bucketsContext) {
+  var match = null;
+
+  if (!mod.resource) {
+    return match;
+  }
+
+  var resourcePath = mod.resource;
+  for (var i in ignore) {
+    if (ignore[i].test(resourcePath)) {
+      return match;
+    }
+  }
+
+  bucketsContext.some(function (bucket) {
+    return bucket.path.some(function (path) {
+      if (path.test(resourcePath)) {
+        match = bucket;
+        return true;
+      }
+    });
+  });
+
+  return match;
+}

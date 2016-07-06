@@ -3,10 +3,12 @@ var SplitByPathPlugin = require('../');
 
 module.exports = {
   entry: {
-    app: './example/js/app'
+    app: path.resolve(__dirname, 'js/app.js'),
+    test: path.resolve(__dirname, 'js/test.js')
   },
   output: {
     path: path.join(__dirname, 'dist'),
+    pathinfo: true,
     filename: '[name].js',
     chunkFilename: '[name].js'
   },
