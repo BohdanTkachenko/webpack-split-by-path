@@ -31,8 +31,7 @@ new SplitByPathPlugin(chunks, options);
 - chunks - array of objects { name: string, path: string | string[] }
 - options - object, optional {
     ignore: string | string[],
-    ignoreChunks: string | string[],
-    manifest: string
+    ignoreChunks: string | string[]
   }
 
 ```js
@@ -55,7 +54,8 @@ new SplitByPathPlugin([
 var SplitByPathPlugin = require('webpack-split-by-path');
 module.exports = {
   entry: {
-    app: 'app.js'
+    app: 'app.js',
+    polyfills: 'polyfills.js'
   },
   output: {
     path: __dirname + '/public',
@@ -69,7 +69,7 @@ module.exports = {
         path: path.join(__dirname, 'node_modules')
       }
     ], {
-      manifest: 'app-entry'
+      ignoreChunks: ['polyfills']
     })
   ]
 };
