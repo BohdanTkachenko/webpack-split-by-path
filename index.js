@@ -88,7 +88,7 @@ SplitByPathPlugin.prototype.apply = function (compiler) {
       var entryChunks = chunks
         .filter(function (chunk) {
           // only parse the entry chunk
-          return chunk.entry && chunk.name && ignoreChunks.indexOf(chunk.name) === -1;
+          return chunk.hasRuntime() && chunk.name && ignoreChunks.indexOf(chunk.name) === -1;
         })
         .map(function (chunk) {
           chunk.modules
@@ -126,17 +126,15 @@ SplitByPathPlugin.prototype.apply = function (compiler) {
       // (the manifest list) for the target page.
 
       var manifestChunk = addChunk(manifestName);
-      manifestChunk.initial = manifestChunk.entry = true;
       manifestChunk.chunks = notEmptyBucketChunks.concat(entryChunks);
 
       manifestChunk.chunks.forEach(function (chunk) {
         chunk.parents = [manifestChunk];
 
-        // split chunks are all initial chunk
-        chunk.initial = true;
-
-        // set the child chunk as not entry chunk, this is important
-        chunk.entry = false;
+        chunk.entrypoints.forEach(function(ep) {
+          ep.insertChunk(manifestChunk, chunk);
+        });
+        manifestChunk.addChunk(chunk);
       });
     });
   });

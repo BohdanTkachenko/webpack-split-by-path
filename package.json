@@ -8,7 +8,8 @@
     "url": "git@github.com:BohdanTkachenko/webpack-split-by-path.git"
   },
   "keywords": [
-    "webpack"
+    "webpack",
+    "plugin"
   ],
   "author": {
     "name": "Bohdan Tkachenko",
@@ -16,7 +17,8 @@
     "url": "http://BohdanTkachenko.com"
   },
   "contributors": [
-    "SoundCloud, Nick Fisher"
+    "SoundCloud, Nick Fisher",
+    "Norbert de Langen"
   ],
   "license": "MIT",
   "bugs": {
@@ -27,9 +29,9 @@
   },
   "homepage": "https://github.com/BohdanTkachenko/webpack-split-by-path",
   "devDependencies": {
-    "webpack": "^1.13.0",
-    "css-loader": "^0.17.0",
-    "react": "^0.13.3",
-    "style-loader": "^0.12.3"
+    "webpack": "^2.1.0-beta.20",
+    "css-loader": "^0.23.1",
+    "react": "^15.3.0",
+    "style-loader": "^0.13.1"
   }
 }
