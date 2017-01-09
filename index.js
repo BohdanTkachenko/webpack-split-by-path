@@ -3,6 +3,7 @@
 function regExpQuote(str) {
   return (str + '').replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&');
 }
+var nextIdent = 0;
 
 /**
  * @name Bucket
@@ -18,7 +19,6 @@ function regExpQuote(str) {
  * {
  *    ignore: string[],
  *    ignoreChunks: string[]
- *    manifest: string
  * }
  * </pre>
  * @constructor
@@ -45,7 +45,6 @@ function SplitByPathPlugin(buckets, config) {
   });
 
   this.ignoreChunks = config.ignoreChunks;
-  this.manifest = config.manifest || 'manifest';
 
   // buckets mean each bucket holds a pile of module, which is the same concept as chunk
   this.buckets = buckets.slice(0).map(function (bucket) {
@@ -63,80 +62,67 @@ function SplitByPathPlugin(buckets, config) {
 
     return bucket;
   });
+
+  this.ident = __filename + (nextIdent++);
 }
 
 SplitByPathPlugin.prototype.apply = function (compiler) {
   var buckets = this.buckets;
   var ignore = this.ignore;
   var ignoreChunks = this.ignoreChunks;
-  var manifestName = this.manifest;
+  var ident = this.ident;
 
   compiler.plugin('this-compilation', function (compilation) {
-    var extraChunks = {};
+    compilation.plugin('optimize-modules', function (modules) {
+      // Only run once
+      if(compilation[ident]) return;
+      compilation[ident] = true;
 
-    // Find the chunk which was already created by this bucket.
-    // This is also the grossest function name I've written today.
-    function bucketToChunk(bucket) {
-      return extraChunks[bucket.name];
-    }
+      var bucketChunks = [].concat(buckets).map(function(bucket) {
+        var chunk = this.addChunk(bucket.name);
+        chunk.entry = chunk.initial = true;
+        bucket.chunk = chunk;
+        return chunk;
+      }, this);
 
-    compilation.plugin('optimize-chunks', function (chunks) {
-
-      var addChunk = this.addChunk.bind(this);
-
-      // retrieve the entry chunks, so we can reform them
-      var entryChunks = chunks
-        .filter(function (chunk) {
-          // only parse the entry chunk
-          return chunk.entry && chunk.name && ignoreChunks.indexOf(chunk.name) === -1;
-        })
-        .map(function (chunk) {
-          chunk.modules
-            .slice()
-            .forEach(function (mod) {
-              var bucket = findMatchingBucket(mod, ignore, buckets);
-              var newChunk;
-
-              if (!bucket) {
-                // the module stays in the original chunk
-                return;
-              }
-
-              newChunk = bucketToChunk(bucket)
-              if (!newChunk) {
-                newChunk = extraChunks[bucket.name] = addChunk(bucket.name);
-              }
-
-              // add the module to the new chunk
-              newChunk.addModule(mod);
-              mod.addChunk(newChunk);
-              // remove it from the existing chunk
-              mod.removeChunk(chunk);
-            });
-
-          return chunk
+      modules.forEach(function processModule(module) {
+        var processChunks = module.chunks.filter(function filterIgnoreChunks(chunk) {
+          return bucketChunks.indexOf(chunk) < 0 && ignoreChunks.indexOf(chunk.name) < 0;
         });
+        var bucket = findMatchingBucket(module, ignore, buckets);
 
-      var notEmptyBucketChunks = buckets.map(bucketToChunk).filter(Boolean);
+        if (!bucket || processChunks.length === 0) {
+          // the module stays in the original chunk
+          return;
+        }
 
-      // create the manifest chunk which displays as the only entry chunk.
-      // it's a little buggy when works with multiple entry specified at entry option
-      // because you have to load the script similar in `the example/app.html`
-      // Therefore, in the manifest output file, there is some additional information
-      // (the manifest list) for the target page.
+        bucket.chunk.addModule(module);
+        module.addChunk(bucket.chunk);
 
-      var manifestChunk = addChunk(manifestName);
-      manifestChunk.initial = manifestChunk.entry = true;
-      manifestChunk.chunks = notEmptyBucketChunks.concat(entryChunks);
+        // Removed processed chunks
+        processChunks.forEach(function removeProcessedChunk(chunk) {
+          chunk.parents = [bucket.chunk];
+          bucket.chunk.chunks.push(chunk);
+          chunk.entry = false;
+        });
+      });
 
-      manifestChunk.chunks.forEach(function (chunk) {
-        chunk.parents = [manifestChunk];
+      this.restartApplyPlugins();
+    });
+    compilation.plugin('optimize-chunks', function () {
+      var bucketChunks = [].concat(buckets).map(function(bucket) {
+        var chunk = this.addChunk(bucket.name);
+        chunk.entry = chunk.initial = true;
+        bucket.chunk = chunk;
+        return chunk;
+      }, this);
 
-        // split chunks are all initial chunk
-        chunk.initial = true;
-
-        // set the child chunk as not entry chunk, this is important
-        chunk.entry = false;
+      // Check for any bucket chunks that were emptied by other optimization plugins
+      bucketChunks.forEach(function checkBucketChunkEmpty(bucketChunk) {
+        if (bucketChunk.isEmpty()) {
+          // Set bucket chunk initial to false to allow RemoveEmptyChunksPlugin to remove the chunk
+          bucketChunk.initial = false;
+        }
       });
     });
   });
