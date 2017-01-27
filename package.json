@@ -28,7 +28,7 @@
   "homepage": "https://github.com/BohdanTkachenko/webpack-split-by-path",
   "devDependencies": {
     "webpack": "^1.13.0",
-    "css-loader": "^0.25.0",
+    "css-loader": "^0.26.1",
     "react": "^15.3.2",
     "style-loader": "^0.13.1"
   }
