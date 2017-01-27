@@ -1,5 +1,7 @@
 ## Split By Path Webpack Plugin
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/BohdanTkachenko/webpack-split-by-path.svg)](https://greenkeeper.io/)
+
 This plugin will split a Webpack entry bundle into any number of arbitrarily defined smaller bundles.
 
 Based on [Split by Name Webpack Plugin](https://github.com/soundcloud/split-by-name-webpack-plugin).
