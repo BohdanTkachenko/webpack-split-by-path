@@ -1,3 +1,9 @@
+[![NPM](https://nodei.co/npm/webpack-split-by-path.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/webpack-split-by-path/)
+
+[![Dependency Status](https://david-dm.org/BohdanTkachenko/webpack-split-by-path.svg?style=flat-square)](https://david-dm.org/BohdanTkachenko/webpack-split-by-path)
+[![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/BohdanTkachenko/webpack-split-by-path.svg)](http://isitmaintained.com/project/BohdanTkachenko/webpack-split-by-path "Average time to resolve an issue")
+[![Percentage of issues still open](http://isitmaintained.com/badge/open/BohdanTkachenko/webpack-split-by-path.svg)](http://isitmaintained.com/project/BohdanTkachenko/webpack-split-by-path "Percentage of issues still open")
+
 ## Split By Path Webpack Plugin
 
 This plugin will split a Webpack entry bundle into any number of arbitrarily defined smaller bundles.
