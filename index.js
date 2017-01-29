@@ -1,5 +1,7 @@
 // Based on Split by Name Webpack Plugin – https://github.com/soundcloud/split-by-name-webpack-plugin
 
+var Entrypoint = require('webpack/lib/Entrypoint');
+
 function regExpQuote(str) {
   return (str + '').replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&');
 }
@@ -105,6 +107,9 @@ SplitByPathPlugin.prototype.apply = function (compiler) {
               newChunk = bucketToChunk(bucket)
               if (!newChunk) {
                 newChunk = extraChunks[bucket.name] = addChunk(bucket.name);
+                var entrypoint = new Entrypoint(bucket.name);
+                entrypoint.chunks.push(newChunk);
+                newChunk.entrypoints = [entrypoint];
               }
 
               // add the module to the new chunk
@@ -130,8 +135,7 @@ SplitByPathPlugin.prototype.apply = function (compiler) {
 
       manifestChunk.chunks.forEach(function (chunk) {
         chunk.parents = [manifestChunk];
-
-        chunk.entrypoints.forEach(function(ep) {
+        chunk.entrypoints.forEach(function (ep) {
           ep.insertChunk(manifestChunk, chunk);
         });
         manifestChunk.addChunk(chunk);
