@@ -1,6 +1,6 @@
 {
   "name": "webpack-split-by-path",
-  "version": "2.0.1",
+  "version": "3.0.0",
   "description": "Split a Webpack entry bundle into any number of arbitrarily defined smaller bundles",
   "main": "index.js",
   "repository": {
@@ -29,9 +29,9 @@
   },
   "homepage": "https://github.com/BohdanTkachenko/webpack-split-by-path",
   "devDependencies": {
-    "webpack": "^2.2.0",
-    "css-loader": "^0.25.0",
+    "webpack": "^3.0.0",
+    "css-loader": "^0.28.0",
     "react": "^15.3.2",
-    "style-loader": "^0.13.1"
+    "style-loader": "^0.18.0"
   }
 }

@@ -93,31 +93,29 @@ SplitByPathPlugin.prototype.apply = function (compiler) {
           return chunk.hasRuntime() && chunk.name && ignoreChunks.indexOf(chunk.name) === -1;
         })
         .map(function (chunk) {
-          chunk.modules
-            .slice()
-            .forEach(function (mod) {
-              var bucket = findMatchingBucket(mod, ignore, buckets);
-              var newChunk;
+          chunk.forEachModule(function (mod) {
+            var bucket = findMatchingBucket(mod, ignore, buckets);
+            var newChunk;
 
-              if (!bucket) {
-                // the module stays in the original chunk
-                return;
-              }
+            if (!bucket) {
+              // the module stays in the original chunk
+              return;
+            }
 
-              newChunk = bucketToChunk(bucket)
-              if (!newChunk) {
-                newChunk = extraChunks[bucket.name] = addChunk(bucket.name);
-                var entrypoint = new Entrypoint(bucket.name);
-                entrypoint.chunks.push(newChunk);
-                newChunk.entrypoints = [entrypoint];
-              }
+            newChunk = bucketToChunk(bucket)
+            if (!newChunk) {
+              newChunk = extraChunks[bucket.name] = addChunk(bucket.name);
+              var entrypoint = new Entrypoint(bucket.name);
+              entrypoint.chunks.push(newChunk);
+              newChunk.entrypoints = [entrypoint];
+            }
 
-              // add the module to the new chunk
-              newChunk.addModule(mod);
-              mod.addChunk(newChunk);
-              // remove it from the existing chunk
-              mod.removeChunk(chunk);
-            });
+            // add the module to the new chunk
+            newChunk.addModule(mod);
+            mod.addChunk(newChunk);
+            // remove it from the existing chunk
+            mod.removeChunk(chunk);
+          });
 
           return chunk
         });
