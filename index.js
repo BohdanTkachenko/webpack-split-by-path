@@ -82,6 +82,14 @@ SplitByPathPlugin.prototype.apply = function (compiler) {
       return extraChunks[bucket.name];
     }
 
+    function getChunk(name) {
+      return extraChunks[name];
+    }
+    
+    function getChunkName(bucket, entry) {
+      return bucket.name.replace("[entryname]", entry.name);
+    }
+
     compilation.plugin('optimize-chunks', function (chunks) {
 
       var addChunk = this.addChunk.bind(this);
@@ -102,10 +110,11 @@ SplitByPathPlugin.prototype.apply = function (compiler) {
               return;
             }
 
-            newChunk = bucketToChunk(bucket)
+            var chunkName = getChunkName(bucket, chunk);
+            newChunk = getChunk(chunkName)
             if (!newChunk) {
-              newChunk = extraChunks[bucket.name] = addChunk(bucket.name);
-              var entrypoint = new Entrypoint(bucket.name);
+              newChunk = extraChunks[chunkName] = addChunk(chunkName);
+              var entrypoint = new Entrypoint(chunkName);
               entrypoint.chunks.push(newChunk);
               newChunk.entrypoints = [entrypoint];
             }
@@ -120,7 +129,9 @@ SplitByPathPlugin.prototype.apply = function (compiler) {
           return chunk
         });
 
-      var notEmptyBucketChunks = buckets.map(bucketToChunk).filter(Boolean);
+      var notEmptyBucketChunks = Object.keys(extraChunks).map(function(key){
+        return extraChunks[key];
+      });
 
       // create the manifest chunk which displays as the only entry chunk.
       // it's a little buggy when works with multiple entry specified at entry option
