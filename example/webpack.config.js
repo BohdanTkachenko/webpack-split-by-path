@@ -19,7 +19,7 @@ module.exports = {
         path: path.resolve(__dirname, '..', 'node_modules')
       },
       {
-        name: 'styles',
+        name: '[entryname].styles',
         path: path.resolve(__dirname, 'css')
       }
     ])
