@@ -24,6 +24,8 @@ bundle, then if they haven't changed between builds, your users may still be abl
 
 Configuration of the plugin is simple. You instantiate the plugin with an array of objects, each containing the keys `name` and `path`. Any modules which are in your entry chunk which match the bucket's path (first matching bucket is used), are then moved to a new chunk with the given name.
 
+If you have several entry points and want some modules to be in different chunks for each entry point you can use the `[entryname]` substitute into the `name` key of chunk.
+
 `path` should be an absolute path string value. It can be also an array of such values.
 
 Creating a 'catch-all' bucket is not necessary: anything which doesn't match one of the defined buckets will be left in
@@ -55,7 +57,7 @@ new SplitByPathPlugin([
 ```
 
 
-### Example
+### Example 1
 
 ```js
 var SplitByPathPlugin = require('webpack-split-by-path');
@@ -82,3 +84,33 @@ module.exports = {
 ```
 
 So every module that is being requested from `node_modules` will be placed in `public/vendor.js` and everything else will be placed in `public/app.js`.
+
+
+### Example 2
+
+```js
+var SplitByPathPlugin = require('webpack-split-by-path');
+module.exports = {
+  entry: {
+    app1: 'app1.js',
+    app2: 'app2.js'
+  },
+  output: {
+    path: __dirname + '/public',
+    filename: "[name]-[chunkhash].js",
+    chunkFilename: "[name]-[chunkhash].js"
+  },
+  plugins: [
+    new SplitByPathPlugin([
+      {
+        name: '[entryname].vendor',
+        path: path.join(__dirname, 'node_modules')
+      }
+    ], {
+      manifest: 'app-entry'
+    })
+  ]
+};
+```
+
+So every module in `app1.js` that is being requested from `node_modules` will be placed in `public/app1.vendor.js` and everything else will be placed in `public/app1.js`. For `app2.js` - `public/app2.vendor.js` and `public/app2.js` respectively.
