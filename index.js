@@ -76,12 +76,6 @@ SplitByPathPlugin.prototype.apply = function (compiler) {
   compiler.plugin('this-compilation', function (compilation) {
     var extraChunks = {};
 
-    // Find the chunk which was already created by this bucket.
-    // This is also the grossest function name I've written today.
-    function bucketToChunk(bucket) {
-      return extraChunks[bucket.name];
-    }
-
     function getChunk(name) {
       return extraChunks[name];
     }
